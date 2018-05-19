@@ -1,4 +1,8 @@
-﻿[cmdletbinding()]
+﻿#$putPath = 'C:\MODWIM'
+#If (!(Test-Path $putPath)) {New-Item -ItemType Directory -Force -Path $putPath | Out-Null}; If (!(Test-Path "$putPath\Mod-Wim.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/Mod-Wim.ps1', "$putPath\Mod-Wim.ps1")}
+#If (Test-Path "$putPath\Mod-Wim.ps1") {. "$putPath\Mod-Wim.ps1"}
+
+[cmdletbinding()]
 Param ()
 #REQUIRES -Version 4
 #REQUIRES -Modules Dism
@@ -8,7 +12,7 @@ Param ()
 # McAfee's OA scanner and even File Explorer will interfere with the process
 # Turn them off and keep them closed while running
 # =================================================================================
-Clear-Host
+Clear-Host; Write-Host "Ready ..."
 
 # The path where this script is located.  Everything else is relative
 $sRoot = $PSScriptRoot
@@ -26,24 +30,24 @@ If (Test-Path "$sRoot\MOUNT") {
 }
 
 # Setup the basic folders we will use
+Write-Host "Set ..."
 If (!(Test-Path "$sRoot\_SOURCE")) {New-Item -Path $sRoot -Name '_SOURCE' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\bin")) {New-Item -Path $sRoot -Name '_SOURCE\bin' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\drivers")) {New-Item -Path $sRoot -Name '_SOURCE\drivers' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\iso")) {New-Item -Path $sRoot -Name '_SOURCE\iso' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\oem")) {New-Item -Path $sRoot -Name '_SOURCE\oem' -ItemType Directory | Out-Null}
-If (!(Test-Path "$sRoot\_SOURCE\oem\`$1")) {New-Item -Path $sRoot -Name "_SOURCE\oem\`$1" -ItemType Directory | Out-Null}
-If (!(Test-Path "$sRoot\_SOURCE\oem\`$`$")) {New-Item -Path $sRoot -Name "_SOURCE\oem\`$$" -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\sxs")) {New-Item -Path $sRoot -Name '_SOURCE\sxs' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\updates")) {New-Item -Path $sRoot -Name '_SOURCE\updates' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\unattend")) {New-Item -Path $sRoot -Name '_SOURCE\unattend' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\wim")) {New-Item -Path $sRoot -Name '_SOURCE\wim' -ItemType Directory | Out-Null}
-If (Test-Path "$sRoot\_SOURCE\New-ISO.ps1") {. "$sRoot\_SOURCE\New-ISO.ps1"; If ($bootbin) {If ($bootbin -ne "$sRoot\_SOURCE\bin\efisys.bin") {Copy-Item $bootbin -Destination "$sRoot\_SOURCE\bin\efisys.bin" -Force}; If (Test-Path "$sRoot\BootDisk.iso") {Remove-Item "$sRoot\BootDisk.iso" -Force}}}
+If (!(Test-Path "$sRoot\_SOURCE\New-ISO.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/New-ISO.ps1', "$sRoot\_SOURCE\New-ISO.ps1")}
 
 # Check to be sure we have the base iso
 $sourceISO = (Get-ChildItem "$sRoot\_SOURCE\iso" -Filter *.iso | Select -First 1).FullName
-If ($sourceISO -eq $null) {Write-Host "So close ...`n"; Write-Host "Copy the current ISO to " -NoNewline; Write-Host "$sRoot\_SOURCE\iso" -ForegroundColor Red -NoNewline; Write-Host " then run it again`n"; Break}
+If ($sourceISO -eq $null) {Write-Host "Oh ...`n`nSo close. Copy the current Win10 iso to " -NoNewline; Write-Host "$sRoot\_SOURCE\iso" -ForegroundColor Red -NoNewline; Write-Host " then run it again`n"; Break}
 
 # Unpack the iso so we can work with it
+Clear-Host
 If (!(Test-Path "$sRoot\MEDIA\sources\install.wim")) {
     If ($sourceISO) {
         If (!(Test-Path "$sRoot\MEDIA")) {New-Item -Path $sRoot -Name 'MEDIA' -ItemType Directory | Out-Null}
@@ -60,6 +64,12 @@ If (Test-Path "$sRoot\MEDIA\autounattend.xml") {Remove-Item "$sRoot\MEDIA\autoun
 If (Test-Path "$sRoot\MEDIA\sources\`$OEM`$") {Remove-Item "$sRoot\MEDIA\sources\`$OEM`$" -Force -Recurse}
 If (Test-Path "$sRoot\MEDIA\boot\fonts") {Remove-Item "$sRoot\MEDIA\boot\fonts" -Force -Recurse}
 If (Test-Path "$sRoot\MEDIA\efi\microsoft\boot\fonts") {Remove-Item "$sRoot\MEDIA\efi\microsoft\boot\fonts" -Force -Recurse}
+If (Test-Path "$sRoot\_SOURCE\New-ISO.ps1") {
+    . "$sRoot\_SOURCE\New-ISO.ps1"
+    If (Test-Path "$sRoot\BootDisk.iso") {Remove-Item "$sRoot\BootDisk.iso" -Force}
+    If ($bootbin -And !(Test-Path "$sRoot\_SOURCE\bin\efisys.bin")) {Copy-Item $bootbin -Destination "$sRoot\_SOURCE\bin\efisys.bin" -Force}
+}
+
 
 # Remove the Read-only flag
 Set-ItemProperty "$sRoot\MEDIA\sources\install.wim" -Name IsReadOnly -Value $False
@@ -114,8 +124,7 @@ If ($arrDrivers.Count -gt 0) {Add-WindowsDriver -Path "$sRoot\MOUNT" -Driver "$s
 # Add OEM files.  Careful, it will copy everything AS IS including hidden files, thumbnails, desktop.ini, etc.  Delete these before running
 $arroem = Get-ChildItem "$sRoot\_SOURCE\oem\*" -Force -Recurse | Where { !($_.PSIsContainer) }
 Write-Host "OEM files: $($arroem.Count)"
-Copy-Item "$sRoot\_SOURCE\OEM\`$1\*" -Destination "$sRoot\MOUNT" -Force -Recurse
-Copy-Item "$sRoot\_SOURCE\OEM\`$`$\*" -Destination "$sRoot\MOUNT\Windows" -Force -Recurse
+Copy-Item "$sRoot\_SOURCE\OEM\*" -Destination "$sRoot\MOUNT" -Force -Recurse
 
 # Remove *&^%$#@ ... I mean the wonderful and very useful tools that MS thinks every ENTERPRISE user needs to have 
 # Since we're doing it in the offline image they are GONE, never to be seen again (or until MS puts them back) 
