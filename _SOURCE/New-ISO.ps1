@@ -87,4 +87,5 @@ public class ISOFile
 }
 If (Test-Path "$sRoot\_SOURCE\bin\efisys.bin") {$bootbin = "$sRoot\_SOURCE\bin\efisys.bin"}
 ElseIf (Test-Path "${env:ProgramFiles(x86)}\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\efisys.bin") {$bootbin = "${env:ProgramFiles(x86)}\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\efisys.bin"}
+ElseIf (Test-Path "$sRoot\MEDIA\efi\microsoft\boot\efisys.bin") {$bootbin = "$sRoot\MEDIA\efi\microsoft\boot\efisys.bin"}
 Else {$bootbin = $null}
