@@ -1,4 +1,8 @@
-﻿[cmdletbinding()]
+﻿#$putPath = 'C:\MODWIM'
+#If (!(Test-Path $putPath)) {New-Item -ItemType Directory -Force -Path $putPath | Out-Null}; If (!(Test-Path "$putPath\Mod-Wim.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/Mod-Wim.ps1', "$putPath\Mod-Wim.ps1")}
+#If (Test-Path "$putPath\Mod-Wim.ps1") {. "$putPath\Mod-Wim.ps1"}
+
+[cmdletbinding()]
 Param ()
 #REQUIRES -Version 4
 #REQUIRES -Modules Dism
@@ -98,10 +102,11 @@ Remove-Item "$sRoot\WORKWIM\install_0.wim" -Force
 $arrUpdates = Get-ChildItem "$sRoot\_SOURCE\updates\*" -Include *.msu,*.cab -Recurse
 $arrDrivers = Get-ChildItem "$sRoot\_SOURCE\drivers\*" -Include *.inf -Recurse
 $arroem = Get-ChildItem "$sRoot\_SOURCE\oem\*" -Force -Recurse | Where { !($_.PSIsContainer) }
-Write-Host "Sanity check!" -ForegroundColor Cyan
+Clear-Host; Write-Host "Sanity check!" -ForegroundColor Cyan
 Write-Host "Updates found: $($arrUpdates.Count)"
 Write-Host "Drivers found: $($arrDrivers.Count)"
 Write-Host "OEM files:     $($arroem.Count)"
+Write-Host "`nIf you haven't already done so, populate the folders with whatever you want added to the image."
 Read-Host "Press [ENTER] to continue ..."
 $arrUpdates = Get-ChildItem "$sRoot\_SOURCE\updates\*" -Include *.msu,*.cab -Recurse
 $arrDrivers = Get-ChildItem "$sRoot\_SOURCE\drivers\*" -Include *.inf -Recurse
