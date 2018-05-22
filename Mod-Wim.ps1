@@ -30,7 +30,28 @@ If (!(Test-Path "$sRoot\_SOURCE\sxs")) {New-Item -Path $sRoot -Name '_SOURCE\sxs
 If (!(Test-Path "$sRoot\_SOURCE\updates")) {New-Item -Path $sRoot -Name '_SOURCE\updates' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\unattend")) {New-Item -Path $sRoot -Name '_SOURCE\unattend' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\wim")) {New-Item -Path $sRoot -Name '_SOURCE\wim' -ItemType Directory | Out-Null}
+
 If (!(Test-Path "$sRoot\_SOURCE\ps\New-ISO.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/ps/New-ISO.ps1', "$sRoot\_SOURCE\ps\New-ISO.ps1")}
+If (!(Test-Path "$sRoot\_SOURCE\bin\efisys.bin.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/bin/efisys.bin', "$sRoot\_SOURCE\bin\efisys.bin")}
+If (!(Test-Path "$sRoot\_SOURCE\unattend\autounattend.xml")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/unattend/autounattend.xml', "$sRoot\_SOURCE\unattend\autounattend.xml")}
+If (!(Test-Path "$sRoot\_SOURCE\oem\ProgramData\Microsoft\User Account Pictures")) {New-Item -Path $sRoot -Name '_SOURCE\oem\ProgramData\Microsoft\User Account Pictures' -ItemType Directory | Out-Null}
+$arrOemfiles = [System.Collections.ArrayList] @(
+    "guest.bmp"
+    "guest.png"
+    "user.bmp"
+    "user.png"
+    "user-32.png"
+    "user-40.png"
+    "user-48.png"
+    "user-192.png"
+)
+ForEach ($file in $arrOemfiles) {
+    If (!(Test-Path "$sRoot\_SOURCE\oem\ProgramData\Microsoft\User Account Pictures\$file")) {
+        $client = new-object System.Net.WebClient
+        $client.DownloadFile("https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/oem/ProgramData/Microsoft/User Account Pictures/$file", "$sRoot\_SOURCE\oem\ProgramData\Microsoft\User Account Pictures\$file")
+    }
+}
+
 
 # Check to be sure we have the base iso
 $sourceISO = (Get-ChildItem "$sRoot\_SOURCE\iso" -Filter *.iso | Select -First 1).FullName
