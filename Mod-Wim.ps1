@@ -1,8 +1,4 @@
-﻿#$putPath = 'C:\MODWIM'
-#If (!(Test-Path $putPath)) {New-Item -ItemType Directory -Force -Path $putPath | Out-Null}; If (!(Test-Path "$putPath\Mod-Wim.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/Mod-Wim.ps1', "$putPath\Mod-Wim.ps1")}
-#If (Test-Path "$putPath\Mod-Wim.ps1") {. "$putPath\Mod-Wim.ps1"}
-
-[cmdletbinding()]
+﻿[cmdletbinding()]
 Param ()
 #REQUIRES -Version 4
 #REQUIRES -Modules Dism
@@ -111,6 +107,10 @@ Read-Host "Press [ENTER] to continue ..."
 $arrUpdates = Get-ChildItem "$sRoot\_SOURCE\updates\*" -Include *.msu,*.cab -Recurse
 $arrDrivers = Get-ChildItem "$sRoot\_SOURCE\drivers\*" -Include *.inf -Recurse
 $arroem = Get-ChildItem "$sRoot\_SOURCE\oem\*" -Force -Recurse | Where { !($_.PSIsContainer) }
+Clear-Host; Write-Host "Sanity check!" -ForegroundColor Cyan
+Write-Host "Updates found: $($arrUpdates.Count)"
+Write-Host "Drivers found: $($arrDrivers.Count)"
+Write-Host "OEM files:     $($arroem.Count)"
 
 # Mount the wim for editing
 If (!(Test-Path "$sRoot\MOUNT")) {New-Item -Path $sRoot -Name 'MOUNT' -ItemType Directory | Out-Null}
@@ -209,7 +209,6 @@ Set oWSH = CreateObject("Wscript.Shell")
 Set oUAC = CreateObject("Shell.Application")
 Set oFSO = CreateObject("Scripting.FileSystemObject")
 oFSO.DeleteFile Wscript.ScriptFullName
-
 'If oFSO.FileExists(oWSH.ExpandEnvironmentStrings("%ALLUSERSPROFILE%") & "\SetupX.ps1") Then oUAC.ShellExecute "PowerShell.exe", "-ExecutionPolicy Bypass -Command ""&{" & oWSH.ExpandEnvironmentStrings("%ALLUSERSPROFILE%") & "\SetupX.ps1" & "}""", "", "runas", 2
 "@ | Out-File "$sRoot\MOUNT\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\SetupX.vbs"
 
