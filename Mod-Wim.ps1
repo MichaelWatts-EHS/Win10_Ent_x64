@@ -51,6 +51,12 @@ ForEach ($file in $arrOemfiles) {
         $client.DownloadFile("https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/oem/ProgramData/Microsoft/User Account Pictures/$file", "$sRoot\_SOURCE\oem\ProgramData\Microsoft\User Account Pictures\$file")
     }
 }
+If ((Get-ChildItem "$sRoot\_SOURCE\updates\*" -Include *.msu,*.cab -Recurse).Count -eq 0) {
+    $ie = New-Object -ComObject InternetExplorer.Application
+#    $ie.Navigate("https://www.catalog.update.microsoft.com/Search.aspx?q=Windows%2010%20x64%201803%202018-05")
+    $ie.Navigate("https://www.catalog.update.microsoft.com/")
+    $ie.Visible = $true
+}
 
 
 # Check to be sure we have the base iso
