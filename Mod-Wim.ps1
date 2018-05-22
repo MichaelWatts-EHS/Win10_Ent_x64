@@ -244,9 +244,7 @@ oFSO.DeleteFile Wscript.ScriptFullName
 Try {
     Write-Host 'Dismounting the image'
     Dismount-WindowsImage -Path "$sRoot\MOUNT" -Save | Out-Null
-    Remove-Item "$sRoot\MOUNT" -Force -Recurse
     Move-Item -Path "$sRoot\WORKWIM\install.wim" -Destination "$sRoot\MEDIA\sources\install.wim" -Force
-    Remove-Item "$sRoot\WORKWIM" -Force -Recurse
 } Catch {}
 
 
@@ -260,4 +258,8 @@ If ($bootbin) {
     Write-Host "Here you go: `t`t " -NoNewline; Write-Host "$sRoot\MEDIA" -ForegroundColor Cyan
     & Explorer "$sRoot\MEDIA\"
 }
+Remove-Item "$sRoot\MOUNT" -Force -Recurse
+Remove-Item "$sRoot\WORKWIM" -Force -Recurse
+
+
 Write-Host "`n`nAnd there was much rejoicing" -ForegroundColor Green
