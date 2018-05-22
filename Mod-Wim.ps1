@@ -258,8 +258,9 @@ If ($bootbin) {
     Write-Host "Here you go: `t`t " -NoNewline; Write-Host "$sRoot\MEDIA" -ForegroundColor Cyan
     & Explorer "$sRoot\MEDIA\"
 }
-Remove-Item "$sRoot\MOUNT" -Force -Recurse
-Remove-Item "$sRoot\WORKWIM" -Force -Recurse
+
+#Remove-Item "$sRoot\MOUNT" -Force -Recurse | Out-Null
+#Remove-Item "$sRoot\WORKWIM" -Force -Recurse | Out-Null
 
 
 Write-Host "`n`nAnd there was much rejoicing" -ForegroundColor Green
