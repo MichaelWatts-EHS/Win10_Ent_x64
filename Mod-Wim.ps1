@@ -58,7 +58,7 @@ If ($goodURL) {
             $client.DownloadFile("$GetPath/_SOURCE/oem/ProgramData/Microsoft/User Account Pictures/$file", "$sRoot\_SOURCE\oem\ProgramData\Microsoft\User Account Pictures\$file")
         }
     }
-    If (!(Test-Path "$sRoot\_SOURCE\oem\ProgramData\PostOOBE.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile("$GetPath/_SOURCE/oem/ProgramData/PostOOBE.ps1", "$sRoot\_SOURCE\unattend\oem\ProgramData\PostOOBE.ps1")}
+    If (!(Test-Path "$sRoot\_SOURCE\oem\ProgramData\PostOOBE.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile("$GetPath/_SOURCE/oem/ProgramData/PostOOBE.ps1", "$sRoot\_SOURCE\oem\ProgramData\PostOOBE.ps1")}
 }
 
 # Check to be sure we have the base iso
