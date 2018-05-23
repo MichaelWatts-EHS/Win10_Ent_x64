@@ -12,5 +12,5 @@ Param(
 Try {
     If (!(Test-Path $PutPath)) {New-Item -ItemType Directory -Force -Path $PutPath | Out-Null}
     If (!(Test-Path "$putPath\Mod-Wim.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile("$GetPath/Mod-Wim.ps1", "$putPath\Mod-Wim.ps1")}
-    If (Test-Path "$putPath\Mod-Wim.ps1") {. "$putPath\Mod-Wim.ps1"}
+    If (Test-Path "$putPath\Mod-Wim.ps1") {. "$putPath\Mod-Wim.ps1" $GetPath}
 } Catch {}
