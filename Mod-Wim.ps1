@@ -63,7 +63,7 @@ If ($sourceISO -eq $null) {
     $OpenFileDialog.initialDirectory = "$sRoot\_SOURCE\iso"
     $OpenFileDialog.filter = "ISO (*.iso)| *.iso"
     $OpenFileDialog.ShowDialog() | Out-Null
-    If ($OpenFileDialog.filename -eq $null) {Write-Host "Process cancelled by user" -ForegroundColor Red; Break} Else {Clear-Host; Write-Host "Copying ISO"}
+    If ($OpenFileDialog.filename -eq "") {Write-Host "Process cancelled by user" -ForegroundColor Red; Break} Else {Clear-Host; Write-Host "Copying ISO"}
     Copy-Item "$($OpenFileDialog.filename)" -Destination "$sRoot\_SOURCE\iso" -Force
     $sourceISO = (Get-ChildItem "$sRoot\_SOURCE\iso" -Filter *.iso | Select -First 1).FullName   
 }
@@ -124,17 +124,17 @@ $arroem = Get-ChildItem "$sRoot\_SOURCE\oem\*" -Force -Recurse | Where { !($_.PS
 Write-Host "Updates found: $($arrUpdates.Count)"
 Write-Host "Drivers found: $($arrDrivers.Count)"
 Write-Host "OEM files:     $($arroem.Count)"
-Write-Host "`nIf you haven't already done so, populate the folders with whatever you want added to the image."
-Read-Host "Press [ENTER] to continue ..."
-
-Clear-Host; Write-Host "Sanity check!" -ForegroundColor Cyan
+Write-Host "--------------------------"
+Write-Host "Populate the folders with anything you want added to the image."
+If ($arrUpdates.Count -eq 0) {
+    Write-Host "If you haven't already done so you should download the current updates and security patches from:"
+    Write-Host "https://www.catalog.update.microsoft.com/Search.aspx?q=Windows%2010%20x64%201803" -ForegroundColor Cyan
+}
+Read-Host "Go ahead, I'll wait.  Press [ENTER] when you are ready"
 $arrUpdates = Get-ChildItem "$sRoot\_SOURCE\updates\*" -Include *.msu,*.cab -Recurse
 $arrDrivers = Get-ChildItem "$sRoot\_SOURCE\drivers\*" -Include *.inf -Recurse
 $arroem = Get-ChildItem "$sRoot\_SOURCE\oem\*" -Force -Recurse | Where { !($_.PSIsContainer) }
-Write-Host "Updates found: $($arrUpdates.Count)"
-Write-Host "Drivers found: $($arrDrivers.Count)"
-Write-Host "OEM files:     $($arroem.Count)"
-Write-Host "--------------------------"
+
 
 # Mount the wim for editing
 If (!(Test-Path "$sRoot\MOUNT")) {New-Item -Path $sRoot -Name 'MOUNT' -ItemType Directory | Out-Null}
