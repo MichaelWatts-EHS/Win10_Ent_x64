@@ -14,7 +14,7 @@ Clear-Host
 $sRoot = $PSScriptRoot
 
 # Cleanup any leftovers from previous runs
-If (Test-Path "$sRoot\BootDisk.iso") {Remove-Item "$sRoot\BootDisk.iso" -Force}
+If (Test-Path "$sRoot\MEDIA.iso") {Remove-Item "$sRoot\MEDIA.iso" -Force}
 If (Test-Path "$sRoot\MEDIA") {Remove-Item "$sRoot\MEDIA" -Force -Recurse}
 If (Test-Path "$sRoot\WORKWIM") {Remove-Item "$sRoot\WORKWIM" -Force -Recurse}
 If (Test-Path "$sRoot\MOUNT") {Try {Remove-Item "$sRoot\MOUNT" -Force -Recurse} Catch {Clear-WindowsCorruptMountPoint | Out-Null; Try {Remove-Item "$sRoot\MOUNT" -Force -Recurse} Catch {Write-Host "$sRoot\MOUNT could not be removed. Delete it and run again." -ForegroundColor Red; Break}}}
@@ -29,8 +29,8 @@ If (!(Test-Path "$sRoot\_SOURCE\ps")) {New-Item -Path $sRoot -Name '_SOURCE\ps' 
 If (!(Test-Path "$sRoot\_SOURCE\sxs")) {New-Item -Path $sRoot -Name '_SOURCE\sxs' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\updates")) {New-Item -Path $sRoot -Name '_SOURCE\updates' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\unattend")) {New-Item -Path $sRoot -Name '_SOURCE\unattend' -ItemType Directory | Out-Null}
+If (!(Test-Path "$sRoot\_SOURCE\vm")) {New-Item -Path $sRoot -Name '_SOURCE\vm' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\wim")) {New-Item -Path $sRoot -Name '_SOURCE\wim' -ItemType Directory | Out-Null}
-
 If (!(Test-Path "$sRoot\_SOURCE\ps\New-ISO.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/ps/New-ISO.ps1', "$sRoot\_SOURCE\ps\New-ISO.ps1")}
 If (!(Test-Path "$sRoot\_SOURCE\bin\efisys.bin.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/bin/efisys.bin', "$sRoot\_SOURCE\bin\efisys.bin")}
 If (!(Test-Path "$sRoot\_SOURCE\unattend\autounattend.xml")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/unattend/autounattend.xml', "$sRoot\_SOURCE\unattend\autounattend.xml")}
@@ -51,34 +51,29 @@ ForEach ($file in $arrOemfiles) {
         $client.DownloadFile("https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/oem/ProgramData/Microsoft/User Account Pictures/$file", "$sRoot\_SOURCE\oem\ProgramData\Microsoft\User Account Pictures\$file")
     }
 }
-If ((Get-ChildItem "$sRoot\_SOURCE\updates\*" -Include *.msu,*.cab -Recurse).Count -eq 0) {
-    $ie = New-Object -ComObject InternetExplorer.Application
-#    $ie.Navigate("https://www.catalog.update.microsoft.com/Search.aspx?q=Windows%2010%20x64%201803%202018-05")
-    $ie.Navigate("https://www.catalog.update.microsoft.com/")
-    $ie.Visible = $true
-}
 
 
 # Check to be sure we have the base iso
 $sourceISO = (Get-ChildItem "$sRoot\_SOURCE\iso" -Filter *.iso | Select -First 1).FullName
 If ($sourceISO -eq $null) {
-    Write-Host 'Select the ISO to use as the baseline'
+    Write-Host "Select the ISO to use as the baseline`nIf you don't have it handy, you can download it from the VL Portal"
+    Write-Host "https://www.microsoft.com/Licensing/servicecenter/default.aspx" -ForegroundColor Cyan
     [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms") | Out-Null
     $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
     $OpenFileDialog.initialDirectory = "$sRoot\_SOURCE\iso"
     $OpenFileDialog.filter = "ISO (*.iso)| *.iso"
     $OpenFileDialog.ShowDialog() | Out-Null
-    If ($OpenFileDialog.filename -eq $null) {Write-Host "Process cancelled by user" -ForegroundColor Red; Break}
+    If ($OpenFileDialog.filename -eq $null) {Write-Host "Process cancelled by user" -ForegroundColor Red; Break} Else {Clear-Host; Write-Host "Copying ISO"}
     Copy-Item "$($OpenFileDialog.filename)" -Destination "$sRoot\_SOURCE\iso" -Force
     $sourceISO = (Get-ChildItem "$sRoot\_SOURCE\iso" -Filter *.iso | Select -First 1).FullName   
 }
 
-# Unpack the media and clean it up
+# Unpack the media
 If ($sourceISO) {
     If (!(Test-Path "$sRoot\MEDIA")) {New-Item -Path $sRoot -Name 'MEDIA' -ItemType Directory | Out-Null}
     $mount = Mount-DiskImage -ImagePath $sourceISO -PassThru
     $mountdrive = ($mount | Get-Volume).DriveLetter+":"
-    Write-Host 'Copying files from the iso'
+    Clear-Host; Write-Host 'Copying files from the iso'
     Copy-Item "$mountdrive\*" -Destination "$sRoot\MEDIA" -Force -Recurse
     Dismount-DiskImage -ImagePath $sourceISO
 }
@@ -108,7 +103,7 @@ If (Test-Path "$sRoot\_SOURCE\Unattend\autounattend.xml") {
 
 # Clean out the working folder and get a clean copy of install.wim
 If (!(Test-Path "$sRoot\WORKWIM")) {New-Item -Path $sRoot -Name 'WORKWIM' -ItemType Directory | Out-Null}
-Move-Item -Path "$sRoot\MEDIA\sources\install.wim" -Destination "$sRoot\WORKWIM\install_0.wim" -Force
+$ret = Move-Item -Path "$sRoot\MEDIA\sources\install.wim" -Destination "$sRoot\WORKWIM\install_0.wim" -Force
 
 # Find and export the image we want
 $arrImages = Get-WindowsImage -ImagePath "$sRoot\WORKWIM\install_0.wim"
@@ -119,25 +114,27 @@ $iIndex = ($arrImages | Where {$_.ImageName -eq 'Windows 10 Enterprise'}).ImageI
 If ($iIndex) {Write-Host "Index #$iIndex is the one we want"} Else {Write-Host "'Windows 10 Enterprise' isn't one of them.  Aborting" -ForegroundColor Red; Break}
 Try {Export-WindowsImage -SourceImagePath "$sRoot\WORKWIM\install_0.wim" -SourceIndex $iIndex -DestinationImagePath "$sRoot\WORKWIM\install.wim" -DestinationName 'Windows 10 Enterprise' | Out-Null} Catch {}
 If (!(Test-Path "$sRoot\WORKWIM\install.wim")) {Write-Host "Danger, Danger, Will Robinson" -ForegroundColor Red; Break}
-Remove-Item "$sRoot\WORKWIM\install_0.wim" -Force
+$ret = Remove-Item "$sRoot\WORKWIM\install_0.wim" -Force
 
 # Check the folders that need to be populated
+Clear-Host; Write-Host "Sanity check!" -ForegroundColor Cyan
 $arrUpdates = Get-ChildItem "$sRoot\_SOURCE\updates\*" -Include *.msu,*.cab -Recurse
 $arrDrivers = Get-ChildItem "$sRoot\_SOURCE\drivers\*" -Include *.inf -Recurse
 $arroem = Get-ChildItem "$sRoot\_SOURCE\oem\*" -Force -Recurse | Where { !($_.PSIsContainer) }
-Clear-Host; Write-Host "Sanity check!" -ForegroundColor Cyan
 Write-Host "Updates found: $($arrUpdates.Count)"
 Write-Host "Drivers found: $($arrDrivers.Count)"
 Write-Host "OEM files:     $($arroem.Count)"
 Write-Host "`nIf you haven't already done so, populate the folders with whatever you want added to the image."
 Read-Host "Press [ENTER] to continue ..."
+
+Clear-Host; Write-Host "Sanity check!" -ForegroundColor Cyan
 $arrUpdates = Get-ChildItem "$sRoot\_SOURCE\updates\*" -Include *.msu,*.cab -Recurse
 $arrDrivers = Get-ChildItem "$sRoot\_SOURCE\drivers\*" -Include *.inf -Recurse
 $arroem = Get-ChildItem "$sRoot\_SOURCE\oem\*" -Force -Recurse | Where { !($_.PSIsContainer) }
-Clear-Host; Write-Host "Sanity check!" -ForegroundColor Cyan
 Write-Host "Updates found: $($arrUpdates.Count)"
 Write-Host "Drivers found: $($arrDrivers.Count)"
 Write-Host "OEM files:     $($arroem.Count)"
+Write-Host "--------------------------"
 
 # Mount the wim for editing
 If (!(Test-Path "$sRoot\MOUNT")) {New-Item -Path $sRoot -Name 'MOUNT' -ItemType Directory | Out-Null}
@@ -226,7 +223,9 @@ If (!(Test-Path "$sRoot\MOUNT\Users\Default\AppData\Local\Microsoft\Windows\Shel
     </defaultlayout:TaskbarLayout>
   </CustomTaskbarLayoutCollection>
 </LayoutModificationTemplate>
-"@ | Out-File "$sRoot\MOUNT\Users\Default\AppData\Local\Microsoft\Windows\Shell\LayoutModification.xml" -Encoding utf8
+"@
+If (!(Test-Path "$sRoot\MOUNT\Users\Default\AppData\Local\Microsoft\Windows\Shell")) {New-Item -ItemType Directory -Force -Path "$sRoot\MOUNT\Users\Default\AppData\Local\Microsoft\Windows\Shell" | Out-Null}
+$layoutData | Out-File "$sRoot\MOUNT\Users\Default\AppData\Local\Microsoft\Windows\Shell\LayoutModification.xml" -Encoding utf8
 }
 
 # Don't argue just let it ride.  Besides, all it does is implode
@@ -236,8 +235,16 @@ Set oWSH = CreateObject("Wscript.Shell")
 Set oUAC = CreateObject("Shell.Application")
 Set oFSO = CreateObject("Scripting.FileSystemObject")
 oFSO.DeleteFile Wscript.ScriptFullName
-'If oFSO.FileExists(oWSH.ExpandEnvironmentStrings("%ALLUSERSPROFILE%") & "\SetupX.ps1") Then oUAC.ShellExecute "PowerShell.exe", "-ExecutionPolicy Bypass -Command ""&{" & oWSH.ExpandEnvironmentStrings("%ALLUSERSPROFILE%") & "\SetupX.ps1" & "}""", "", "runas", 2
-"@ | Out-File "$sRoot\MOUNT\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\SetupX.vbs"
+If oFSO.FileExists(oWSH.ExpandEnvironmentStrings("%ALLUSERSPROFILE%") & "\PostOOBE.ps1") Then oUAC.ShellExecute "PowerShell.exe", "-ExecutionPolicy Bypass -Command ""&{" & oWSH.ExpandEnvironmentStrings("%ALLUSERSPROFILE%") & "\PostOOBE.ps1" & "}""", "", "runas", 2
+"@
+$setupxvbs | Out-File "$sRoot\MOUNT\ProgramData\SetupX.vbs"
+$Shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut("$sRoot\MOUNT\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\SetupX.lnk");$Shortcut.TargetPath = "%ProgramData%\SetupX.vbs"; $Shortcut.Save();
+
+
+#If (!(Test-Path "$sRoot\MOUNT\Users\Default\AppData\Local\Microsoft\Windows\WSUS")) {New-Item -ItemType Directory -Force -Path "$sRoot\MOUNT\Users\Default\AppData\Local\Microsoft\Windows\WSUS" | Out-Null}
+#"[SetupConfig]" | Out-File "$sRoot\MOUNT\Users\Default\AppData\Local\Microsoft\Windows\WSUS\SetupConfig.ini"
+#Add-Content "$sRoot\MOUNT\Users\Default\AppData\Local\Microsoft\Windows\WSUS\SetupConfig.ini" "PostOOBE=%SystemDrive%\Users\Default\AppData\Local\Microsoft\Windows\WSUS\PostOOBE.cmd"
+#"@Echo Off" | Out-File "$sRoot\MOUNT\Users\Default\AppData\Local\Microsoft\Windows\WSUS\PostOOBE.cmd"
 
 
 # Stick the landing
@@ -251,8 +258,8 @@ Try {
 # Bob's your uncle
 If ($bootbin) {
     Write-Host "Creating ISO: `t`t " -NoNewline
-    DIR "$sRoot\MEDIA" | New-IsoFile -Path "$sRoot\BootDisk.iso" -BootFile $bootbin -Media DISK -Title "BootDisk" | Out-Null
-    Write-Host "$sRoot\BootDisk.iso" -ForegroundColor Cyan
+    DIR "$sRoot\MEDIA" | New-IsoFile -Path "$sRoot\MEDIA.iso" -BootFile $bootbin -Media DISK -Title "BootDisk" | Out-Null
+    Write-Host "$sRoot\MEDIA.iso" -ForegroundColor Cyan
     & Explorer "$sRoot\"
 } Else {
     Write-Host "Here you go: `t`t " -NoNewline; Write-Host "$sRoot\MEDIA" -ForegroundColor Cyan
