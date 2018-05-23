@@ -1,5 +1,6 @@
-ï»¿[cmdletbinding()]
-Param ()
+[cmdletbinding()]
+Param()
+
 #REQUIRES -Version 4
 #REQUIRES -Modules Dism
 #REQUIRES -RunAsAdministrator
@@ -9,6 +10,9 @@ Param ()
 # Turn them off and keep them closed while running
 # =================================================================================
 Clear-Host
+Write-Host $GetPath
+break
+
 
 # The path where this script is located.  Everything else is relative
 $sRoot = $PSScriptRoot
@@ -19,7 +23,7 @@ If (Test-Path "$sRoot\MEDIA") {Remove-Item "$sRoot\MEDIA" -Force -Recurse}
 If (Test-Path "$sRoot\WORKWIM") {Remove-Item "$sRoot\WORKWIM" -Force -Recurse}
 If (Test-Path "$sRoot\MOUNT") {Try {Remove-Item "$sRoot\MOUNT" -Force -Recurse} Catch {Clear-WindowsCorruptMountPoint | Out-Null; Try {Remove-Item "$sRoot\MOUNT" -Force -Recurse} Catch {Write-Host "$sRoot\MOUNT could not be removed. Delete it and run again." -ForegroundColor Red; Break}}}
 
-# Setup the basic folders and files we will use
+# Setup the basic folders we will use
 If (!(Test-Path "$sRoot\_SOURCE")) {New-Item -Path $sRoot -Name '_SOURCE' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\bin")) {New-Item -Path $sRoot -Name '_SOURCE\bin' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\drivers")) {New-Item -Path $sRoot -Name '_SOURCE\drivers' -ItemType Directory | Out-Null}
@@ -31,32 +35,37 @@ If (!(Test-Path "$sRoot\_SOURCE\updates")) {New-Item -Path $sRoot -Name '_SOURCE
 If (!(Test-Path "$sRoot\_SOURCE\unattend")) {New-Item -Path $sRoot -Name '_SOURCE\unattend' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\vm")) {New-Item -Path $sRoot -Name '_SOURCE\vm' -ItemType Directory | Out-Null}
 If (!(Test-Path "$sRoot\_SOURCE\wim")) {New-Item -Path $sRoot -Name '_SOURCE\wim' -ItemType Directory | Out-Null}
-If (!(Test-Path "$sRoot\_SOURCE\ps\New-ISO.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/ps/New-ISO.ps1', "$sRoot\_SOURCE\ps\New-ISO.ps1")}
-If (!(Test-Path "$sRoot\_SOURCE\bin\efisys.bin.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/bin/efisys.bin', "$sRoot\_SOURCE\bin\efisys.bin")}
-If (!(Test-Path "$sRoot\_SOURCE\unattend\autounattend.xml")) {$client = new-object System.Net.WebClient; $client.DownloadFile('https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/unattend/autounattend.xml', "$sRoot\_SOURCE\unattend\autounattend.xml")}
-If (!(Test-Path "$sRoot\_SOURCE\oem\ProgramData\Microsoft\User Account Pictures")) {New-Item -Path $sRoot -Name '_SOURCE\oem\ProgramData\Microsoft\User Account Pictures' -ItemType Directory | Out-Null}
-$arrOemfiles = [System.Collections.ArrayList] @(
-    "guest.bmp"
-    "guest.png"
-    "user.bmp"
-    "user.png"
-    "user-32.png"
-    "user-40.png"
-    "user-48.png"
-    "user-192.png"
-)
-ForEach ($file in $arrOemfiles) {
-    If (!(Test-Path "$sRoot\_SOURCE\oem\ProgramData\Microsoft\User Account Pictures\$file")) {
-        $client = new-object System.Net.WebClient
-        $client.DownloadFile("https://raw.githubusercontent.com/MichaelWatts-EHS/Win10_Ent_x64/master/_SOURCE/oem/ProgramData/Microsoft/User Account Pictures/$file", "$sRoot\_SOURCE\oem\ProgramData\Microsoft\User Account Pictures\$file")
-    }
-}
 
+# Try to download some basic files
+Try {$client = new-object System.Net.WebClient; $client.DownloadFile("$GetPath/README.md" , "$sRoot\README.md"); $goodURL = $True} Catch {$goodURL = $False}
+If ($goodURL) {
+    If (!(Test-Path "$sRoot\_SOURCE\ps\New-ISO.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile("$GetPath/_SOURCE/ps/New-ISO.ps1", "$sRoot\_SOURCE\ps\New-ISO.ps1")}
+    If (!(Test-Path "$sRoot\_SOURCE\bin\efisys.bin.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile("$GetPath/_SOURCE/bin/efisys.bin", "$sRoot\_SOURCE\bin\efisys.bin")}
+    If (!(Test-Path "$sRoot\_SOURCE\unattend\autounattend.xml")) {$client = new-object System.Net.WebClient; $client.DownloadFile("$GetPath/_SOURCE/unattend/autounattend.xml", "$sRoot\_SOURCE\unattend\autounattend.xml")}
+    If (!(Test-Path "$sRoot\_SOURCE\oem\ProgramData\Microsoft\User Account Pictures")) {New-Item -Path $sRoot -Name '_SOURCE\oem\ProgramData\Microsoft\User Account Pictures' -ItemType Directory | Out-Null}
+    $arrOemfiles = [System.Collections.ArrayList] @(
+        "guest.bmp"
+        "guest.png"
+        "user.bmp"
+        "user.png"
+        "user-32.png"
+        "user-40.png"
+        "user-48.png"
+        "user-192.png"
+    )
+    ForEach ($file in $arrOemfiles) {
+        If (!(Test-Path "$sRoot\_SOURCE\oem\ProgramData\Microsoft\User Account Pictures\$file")) {
+            $client = new-object System.Net.WebClient
+            $client.DownloadFile("$GetPath/_SOURCE/oem/ProgramData/Microsoft/User Account Pictures/$file", "$sRoot\_SOURCE\oem\ProgramData\Microsoft\User Account Pictures\$file")
+        }
+    }
+    If (!(Test-Path "$sRoot\_SOURCE\oem\ProgramData\PostOOBE.ps1")) {$client = new-object System.Net.WebClient; $client.DownloadFile("$GetPath/_SOURCE/oem/ProgramData/PostOOBE.ps1", "$sRoot\_SOURCE\unattend\oem\ProgramData\PostOOBE.ps1")}
+}
 
 # Check to be sure we have the base iso
 $sourceISO = (Get-ChildItem "$sRoot\_SOURCE\iso" -Filter *.iso | Select -First 1).FullName
 If ($sourceISO -eq $null) {
-    Write-Host "Select the ISO to use as the baseline`nIf you don't have it handy, you can download it from the VL Portal"
+    Write-Host "Select the ISO to use as the baseline`nIf you don't have it handy, you can download it from the Microsoft VL Portal"
     Write-Host "https://www.microsoft.com/Licensing/servicecenter/default.aspx" -ForegroundColor Cyan
     [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms") | Out-Null
     $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
@@ -181,7 +190,7 @@ ForEach ($app In $badApps) {
     Write-Host "   $($app.DisplayName)"
     Remove-AppxProvisionedPackage -Path "$sRoot\MOUNT" -PackageName $($app.PackageName) | Out-Null
 }
-# Because the Start Menu looks like cr@p when you all the blatant commercialism, we give it a nice clean makeover
+# Because the Start Menu looks like cr@p when you remove all the blatant commercialism, we give it a nice clean makeover
 # We also take the opportunity to clean the Taskbar and swap IE for Edge. Don't ask why the built in IE shortcut can't be used just accept it
 If (!(Test-Path "$sRoot\MOUNT\ProgramData\Microsoft\Windows\Start Menu\Programs\Internet Explorer.lnk")) {
     If (Test-Path "$sRoot\MOUNT\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\Internet Explorer.lnk") {Copy-Item "$sRoot\MOUNT\ProgramData\Microsoft\Windows\Start Menu\Programs\Accessories\Internet Explorer.lnk" -Destination "$sRoot\MOUNT\ProgramData\Microsoft\Windows\Start Menu\Programs\Internet Explorer.lnk" -Force}
@@ -270,4 +279,7 @@ If ($bootbin) {
 #Remove-Item "$sRoot\WORKWIM" -Force -Recurse | Out-Null
 
 
-Write-Host "`n`nAnd there was much rejoicing" -ForegroundColor Green
+Write-Host "`n`nAnd there was much rejoicing" -ForegroundColor Green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         GIF89a  ÷  É¡%&­*,§)+ÊPQÅPRÃPRÂPRÎWXÙ^`Ñ`bälmÖfhÕgh²WYÇbdæz{ÍqsÀWZÓz}Ø…ˆÈ„Ç…Å„ˆÅˆŒÊ”Ä„Í¢Ò¡¦Õ§¬Ğ«¯¾¢È¥ª½¯´¼¯´¾²·½°¶Â¶¼Á¶¼zyz²±²±°±¥¤¥‘‘——›ŠŠŒÈÉĞ ¡¥·¹¾ãõ÷ÜäåÚ÷÷æÿÿéÿÿåúúìÿÿáôôæøøåõõğÿÿèööòÿÿğøøùÿÿÁ  ¸  ³  ¯  ª  ©  Ÿ    –  {  y  ¹«º²­«|™”´¡¶Ã	Æ		ˆÌ×—½!!œÂ,,À,,Ê00½--¼..Ñ44×66İ99Â??¾DD‰44Í``ænnÜllÛonÖrrç‚‚ñĞ€€Ë……ÚçÏŒŒé  Ô‘‘ĞÓî¶¶Ü¨¨Ö««ã¶¶è»»Ô««÷İİÑ½½ì××Ï½½×ÇÇäÙÙÜÒÒÿÿÿíííØØØÿÿÿ                                                                                                                                                                                                                                                                                                                                                               !ù  Š ,       ó 	T”(ÅŠ'V¤H4p "-^ÀpáÆ‹(9TÁ¢D
+DÈ0‚…
+ŠP°ğ° Î3e´´I ‚
+‚-L@ tè–+nhj@¢EÁÖØ9tˆš;ğ¤ÁğÂ Œ	 ÈĞùáC†:Q¦H€qĞ‚0K¬ÌÁÁãN’#NÆ¸@è‚ "hòäĞ±‡K‘'bæ®€ñ J—?5šÑÇK“dS¼¸p†ÏBJê¡'‹…ª‰ZpÇ#Bª’ „Ñ”,>`rdH Rl°)G€ùR B“(=Œ8±âÅŒ<˜paÃ€ ;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
