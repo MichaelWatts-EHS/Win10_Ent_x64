@@ -1,1 +1,2 @@
-
+If you have the ADK installed, these files are from
+    C:\Program Files (x86)\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg
