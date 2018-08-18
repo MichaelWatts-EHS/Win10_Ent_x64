@@ -72,15 +72,15 @@ SET XTASK=Enable out-bound RDP (CredSSP)
 REG ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\CredSSP\Parameters /v AllowEncryptionOracle /t REG_DWORD /d 2 /f >NUL
 @Echo %ERRORLEVEL%    %XTASK% >>%LOGFILE%
 
+SET XTASK=Disable Edge desktop shortcut creation
+REG ADD HKLM\Software\Microsoft\Windows\CurrentVersion\Explorer /v DisableEdgeDesktopShortcutCreation /t REG_DWORD /d 1 /f >NUL
+@Echo %ERRORLEVEL%    %XTASK% >>%LOGFILE%
+
 SET XTASK=Approve installed IE add-ons
 REG ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Ext /v IgnoreFrameApprovalCheck /t REG_DWORD /d 1 /f >NUL
 @Echo %ERRORLEVEL%    %XTASK% (64-bit) >>%LOGFILE%
 REG ADD HKLM\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Policies\Ext /v IgnoreFrameApprovalCheck /t REG_DWORD /d 1 /f >NUL
 @Echo %ERRORLEVEL%    %XTASK% (32-bit) >>%LOGFILE%
-
-SET XTASK=Configure Powershell Execution Policy: RemoteSigned
-REG ADD HKLM\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell /v ExecutionPolicy /t REG_SZ /d RemoteSigned /f >NUL
-@Echo %ERRORLEVEL%    %XTASK% >>%LOGFILE%
 
 SET XTASK=Hide folders in File Explorer
 REG ADD "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FolderDescriptions\{0ddd015d-b06c-45d5-8c4c-f59713854639}\PropertyBag" /v "ThisPCPolicy" /t REG_SZ /d "Hide" /f >NUL
@@ -92,12 +92,25 @@ REG ADD "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FolderDescripti
 REG ADD "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FolderDescriptions\{31C0DD25-9439-4F12-BF41-7FF4EDA38722}\PropertyBag" /v "ThisPCPolicy" /t REG_SZ /d "Hide" /f >NUL
 @Echo %ERRORLEVEL%    %XTASK%: 3D Objects >>%LOGFILE%
 
+SET XTASK=Configure Powershell Execution Policy: RemoteSigned
+REG ADD HKLM\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell /v ExecutionPolicy /t REG_SZ /d RemoteSigned /f >NUL
+@Echo %ERRORLEVEL%    %XTASK% >>%LOGFILE%
+
 SET XTASK=Configure Power Profile
 POWERCFG /SETACTIVE 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c >NUL
 @Echo %ERRORLEVEL%    %XTASK% >>%LOGFILE%
 
+SET XTASK=Configure Optimize drives service (auto)
+sc config "defragsvc" start= auto >NUL
+@Echo %ERRORLEVEL%    %XTASK% >>%LOGFILE%
+
 SET XTASK=Disable XBox Services
 for %%X in (XboxGipSvc XblAuthManager XblGameSave XboxNetApiSvc xbgm) do (sc config "%%X" start= disabled >NUL && @Echo %ERRORLEVEL%    %XTASK%: %%X >>%LOGFILE%)
+
+
+
+
+
 
 
 
