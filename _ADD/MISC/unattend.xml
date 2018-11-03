@@ -10,7 +10,7 @@
             <RunSynchronous>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>1</Order>
-                    <Description>Configure Admin Account</Description>
+                    <Description>Enable local Administrator</Description>
                     <Path>NET USER Administrator /active:yes </Path>
                 </RunSynchronousCommand>
             </RunSynchronous>
