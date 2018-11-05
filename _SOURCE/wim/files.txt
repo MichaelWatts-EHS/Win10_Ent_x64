@@ -1,2 +1,0 @@
-From the .\sources folder on the ISO
-    install.wim
